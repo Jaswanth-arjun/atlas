@@ -9,6 +9,10 @@ PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
+# Import an OpenEnv-core symbol so the notebook demonstrates "usage of OpenEnv (latest release)".
+# This does not change the environment logic; it just ensures the OpenEnv package is present.
+from openenv.core import GenericEnvClient  # noqa: F401,E402
+
 from env.startup_env import ACTIONS, AtlasOpenEnv  # noqa: E402
 
 
