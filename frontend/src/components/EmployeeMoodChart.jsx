@@ -76,7 +76,17 @@ export default function EmployeeMoodChart({ data, currentMorale, currentSatisfac
               <CartesianGrid strokeDasharray="4 4" stroke="#1e293b" />
               <XAxis dataKey="name" stroke="#64748b" />
               <YAxis stroke="#64748b" domain={[0, 100]} />
-              <Tooltip />
+              <Tooltip 
+                contentStyle={{ 
+                  backgroundColor: 'rgba(15, 23, 42, 0.95)', 
+                  borderColor: '#334155', 
+                  borderRadius: '8px',
+                  color: '#f8fafc',
+                  boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.5)'
+                }} 
+                itemStyle={{ color: '#e2e8f0', fontWeight: 500 }}
+                cursor={{ fill: 'rgba(34, 211, 238, 0.1)' }}
+              />
               <Bar
                 dataKey="mood"
                 fill="#22d3ee"
