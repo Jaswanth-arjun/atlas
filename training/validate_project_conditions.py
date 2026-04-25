@@ -10,7 +10,7 @@ PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
-from env.startup_env import AtlasStartupEnv
+from env.startup_env import AtlasStartupEnv, AtlasOpenEnv, MANDATES
 
 
 @dataclass
@@ -72,7 +72,12 @@ def validate(num_eval_episodes: int = 120) -> ValidationResult:
         env3.reset()
         _, _, _, _, info = env3.step(random_policy(env3))
         sample_breakdowns.append(info.get("reward_breakdown", {}))
-    condition_2 = all(np.isfinite(sample_rewards)) and all("business_reward" in bd for bd in sample_breakdowns)
+    condition_2 = (
+        all(np.isfinite(sample_rewards))
+        and all("business_reward" in bd for bd in sample_breakdowns)
+        and all("mandate_compliance" in bd for bd in sample_breakdowns)
+        and all(len(bd) >= 8 for bd in sample_breakdowns)
+    )
 
     # Condition (3): challenging but possible.
     # We set success threshold from the random policy's 90th percentile so random has ~10% success.
@@ -94,6 +99,22 @@ def validate(num_eval_episodes: int = 120) -> ValidationResult:
     # - stronger policy shows clear learnable headroom.
     condition_3 = (0.05 <= random_success <= 0.20) and (heuristic_success >= random_success + 0.20)
 
+    # Condition (4): OpenEnv wrapper works correctly (AtlasOpenEnv subclasses OpenEnvBase).
+    condition_4 = False
+    try:
+        oe = AtlasOpenEnv(preset="startup")
+        o4, i4 = oe.reset()
+        assert "mandate" in i4, "mandate missing from info"
+        o5, r5, d5, t5, i5 = oe.step(0)
+        assert isinstance(r5, float), "reward not float"
+        assert "mandate_compliance" in i5["reward_breakdown"], "mandate_compliance missing"
+        assert isinstance(i5["phase"], str), "phase not string"
+        _ = oe.get_state()
+        _ = oe.state()  # ABC method
+        condition_4 = True
+    except Exception as e4:
+        print(f"  [WARN] OpenEnv wrapper check failed: {e4}")
+
     return ValidationResult(
         condition_1_stepwise_actions=condition_1,
         condition_2_code_verifiable_success=condition_2,
@@ -105,6 +126,7 @@ def validate(num_eval_episodes: int = 120) -> ValidationResult:
             "random_success_rate": random_success,
             "heuristic_success_rate": heuristic_success,
             "steps_per_episode": float(steps),
+            "openenv_wrapper_ok": float(condition_4),
         },
     )
 
@@ -129,9 +151,13 @@ def main() -> None:
         result.condition_1_stepwise_actions
         and result.condition_2_code_verifiable_success
         and result.condition_3_challenging_but_possible
+        and bool(result.details.get("openenv_wrapper_ok", 1.0))
     )
+    print("Condition (4) OpenEnv wrapper + mandate_compliance:",
+          "PASS" if result.details.get("openenv_wrapper_ok", 0.0) else "FAIL")
     if not all_pass:
         raise SystemExit(1)
+    print("\nAll conditions PASSED -- ATLAS is hackathon-compliant!")
 
 
 if __name__ == "__main__":
