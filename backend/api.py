@@ -24,8 +24,9 @@ def ensure_sim() -> SimulationService:
 @router.post("/reset")
 def reset(req: ResetRequest):
     global sim
-    sim = SimulationService(preset=req.preset)
-    return {"ok": True, "state": sim.env.state, "episode_id": sim.episode_id}
+    sim = SimulationService(preset=req.preset, mandate=req.mandate)
+    # Use state_snapshot() — public read-only view, avoids direct internal access.
+    return {"ok": True, "state": sim.env.state_snapshot(), "episode_id": sim.episode_id}
 
 
 @router.post("/step")
@@ -35,15 +36,20 @@ def step(req: StepRequest):
 
 @router.get("/state")
 def state():
+    """Returns current environment state. Matches AtlasObservation schema for OpenEnv clients."""
     current_sim = ensure_sim()
     return {
-        "state": current_sim.env.state,
+        "state": current_sim.env.state_snapshot(),  # public read-only view
+        "reward": 0.0,          # AtlasObservation compatibility field
         "done": current_sim.done,
-        "log_size": len(current_sim.decision_log),
-        "episode_id": current_sim.episode_id,
-        "day": current_sim.env.day,
-        "phase": current_sim.env.phase_idx
+        "info": {
+            "log_size": len(current_sim.decision_log),
+            "episode_id": current_sim.episode_id,
+            "day": current_sim.env.day,
+            "phase": current_sim.env.phase_idx,
+        },
     }
+
 
 @router.post("/pause")
 def pause():
@@ -51,11 +57,13 @@ def pause():
     sim_paused = True
     return {"paused": True}
 
+
 @router.post("/resume")
 def resume():
     global sim_paused
     sim_paused = False
     return {"paused": False}
+
 
 @router.post("/speed")
 def speed(val: float = 1.0):
@@ -67,56 +75,61 @@ def speed(val: float = 1.0):
 @router.get("/leaderboard")
 def leaderboard(limit: int = 20):
     db = SessionLocal()
-    rows = db.query(EpisodeLog).order_by(EpisodeLog.total_reward.desc()).limit(limit).all()
-    out = [
-        {
-            "id": row.id,
-            "mode": row.mode,
-            "policy_name": row.policy_name,
-            "total_reward": row.total_reward,
-            "steps": row.steps,
-            "created_at": row.created_at.isoformat() + "Z",
-            "final_cash": row.final_cash,
-            "final_revenue": row.final_revenue,
-        }
-        for row in rows
-    ]
-    db.close()
-    return out
+    try:
+        rows = db.query(EpisodeLog).order_by(EpisodeLog.total_reward.desc()).limit(limit).all()
+        return [
+            {
+                "id": row.id,
+                "mode": row.mode,
+                "policy_name": row.policy_name,
+                "total_reward": row.total_reward,
+                "steps": row.steps,
+                "created_at": row.created_at.isoformat() + "Z",
+                "final_cash": row.final_cash,
+                "final_revenue": row.final_revenue,
+            }
+            for row in rows
+        ]
+    finally:
+        db.close()
 
 
 @router.get("/replay/{episode_id}")
 def replay_episode(episode_id: int):
     db = SessionLocal()
-    steps = (
-        db.query(StepLog)
-        .filter(StepLog.episode_id == episode_id)
-        .order_by(StepLog.id.asc())
-        .all()
-    )
-    db.close()
-    if not steps:
-        raise HTTPException(status_code=404, detail="Episode not found")
-    return [
-        {
-            "day": step.day,
-            "phase": step.phase,
-            "action": step.action,
-            "reward": step.reward,
-            "event": step.event,
-            "state": step.state,
-        }
-        for step in steps
-    ]
+    try:
+        steps = (
+            db.query(StepLog)
+            .filter(StepLog.episode_id == episode_id)
+            .order_by(StepLog.id.asc())
+            .all()
+        )
+        if not steps:
+            raise HTTPException(status_code=404, detail="Episode not found")
+        return [
+            {
+                "day": step.day,
+                "phase": step.phase,
+                "action": step.action,
+                "reward": step.reward,
+                "event": step.event,
+                "state": step.state,
+            }
+            for step in steps
+        ]
+    finally:
+        db.close()
 
 
 @router.get("/investor-report/{episode_id}")
 def investor_report(episode_id: int):
     db = SessionLocal()
-    ep = db.query(EpisodeLog).filter(EpisodeLog.id == episode_id).first()
-    db.close()
-    if not ep:
-        raise HTTPException(status_code=404, detail="Episode not found")
+    try:
+        ep = db.query(EpisodeLog).filter(EpisodeLog.id == episode_id).first()
+        if not ep:
+            raise HTTPException(status_code=404, detail="Episode not found")
+    finally:
+        db.close()
 
     os.makedirs("data", exist_ok=True)
     path = f"data/investor_report_{episode_id}.pdf"

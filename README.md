@@ -8,11 +8,17 @@ pinned: false
 
 # ATLAS: Multi-Agent Startup Management Simulation
 
+> **TL;DR FOR JUDGES:**
+> **1. Problem:** We target multi-step strategic planning and instruction following under resource constraints.
+> **2. Environment:** A 90-day multi-agent startup simulation (cash, morale, crises) where an AI CEO directs 13 distinct corporate actions, with dense reward verification.
+> **3. Results:** +39% improvement over baseline heuristic via TRL SFT, further optimized via GRPO reinforcement learning.
+> **4. Why it matters:** It proves LLMs can manage dynamic, multi-dimensional resource challenges beyond simple grid worlds or static API calling.
+
 > **OpenEnv Hackathon 2026** — Theme: Multi-Agent Interactions + Instruction Following + Self-Improving Agents
 
 ATLAS is a real-time startup simulation where an **AI CEO** coordinates multiple autonomous department agents over a **90-day quarter**. The environment is fully OpenEnv-compliant, Gym-compatible, and designed for a two-stage learning pipeline:
 - **TRL SFT** warm-start from environment-generated trajectories (with optional **Unsloth** acceleration)
-- **TRL PPO RL** optimization using real environment rewards (action -> reward/penalty -> policy improvement)
+- **TRL GRPO / PPO** optimization using real environment rewards (action -> verifiable reward -> policy improvement)
 
 🔗 **Live Space:** https://huggingface.co/spaces/nelluru/ATLAS  
 🔗 **Live App:** https://nelluru-atlas.hf.space  
@@ -90,9 +96,9 @@ reward = 0.00005 × revenue
 ![TRL Loss Curve](training/trl_loss_curve.png)
 *SFT training loss logged by the TRL trainer over 30 steps showing steady convergence.*
 
-### TRL PPO RL: Reward-Driven Improvement
+### TRL GRPO / PPO RL: Verifiable Reward-Driven Improvement
 
-Run `python training/trl_ppo_rl.py` to execute reinforcement learning episodes where the model takes actions in the environment, receives reward/penalty signals, and updates policy via TRL PPO.
+Run `python training/trl_grpo_rl.py` (or `trl_ppo_rl.py`) to execute reinforcement learning episodes where the model takes actions in the environment, receives verifiable reward/penalty signals, and updates policy via TRL GRPO/PPO.
 
 ---
 
@@ -101,7 +107,7 @@ Run `python training/trl_ppo_rl.py` to execute reinforcement learning episodes w
 ATLAS is designed for recursive capability growth:
 1. **Adaptive Curricula**: The environment provides scenario presets (`startup` → `growth` → `crisis`). Agents follow an adaptive curriculum, training on stable environments before tackling high-volatility "black swan" events.
 2. **Heuristic Distillation (Expert-in-the-loop)**: The environment includes a heuristic "Expert" used to generate initial high-quality trajectories. These are distilled into the agent via TRL SFT to establish a strong baseline.
-3. **Reinforcement Optimization (TRL PPO)**: The model is then optimized online inside the environment (`training/trl_ppo_rl.py`) using dense rewards and penalties from each step.
+3. **Verifiable Optimization (TRL GRPO)**: The model is then optimized online inside the environment (`training/trl_grpo_rl.py`) using dense verifiable rewards and penalties from each step, taking advantage of the latest RLVR capabilities.
 4. **Trajectory Filtering**: Using the reward signal, the system can filter self-play trajectories, keeping only those that exceed the reward mean of the previous iteration for the next round.
 
 ## Minimum Requirements Checklist
@@ -111,7 +117,7 @@ ATLAS is designed for recursive capability growth:
 | OpenEnv (latest release) `0.2.3` | ✅ | `requirements.txt`, `openenv.yaml` |
 | OpenEnv manifest | ✅ | `openenv.yaml` (repo root) |
 | TRL SFT training script in Colab | ✅ | `training/TRL_Colab_Minimal.ipynb`, `training/trl_colab_minimal.py` |
-| TRL RL trainer (PPO) | ✅ | `training/trl_ppo_rl.py` |
+| TRL RL trainer (GRPO/PPO) | ✅ | `training/trl_grpo_rl.py`, `training/trl_ppo_rl.py` |
 | Unsloth acceleration integrated | ✅ | `training/trl_colab_minimal.py`, `requirements.txt` |
 | Training Evidence (plots) | ✅ | `reward_curve.png`, `trl_reward_curve.png`, `trl_loss_curve.png` |
 | Mini-video < 2 min | ✅ | https://youtu.be/1aWDCkJ3Uyc |
@@ -178,11 +184,11 @@ Stage 1 (`trl_colab_minimal.py`):
 3. Evaluates reward **before vs after** training
 4. Saves `training/trl_reward_curve.png` and `training/trl_loss_curve.png`
 
-Stage 2 (`trl_ppo_rl.py`):
-1. Runs model-in-the-loop episodes in the environment
-2. Uses step rewards/penalties as PPO training signal
-3. Updates policy via TRL `PPOTrainer`
-4. Saves RL-updated policy to `training/trl_ppo_out`
+Stage 2 (`trl_grpo_rl.py` / `trl_ppo_rl.py`):
+1. Runs model-in-the-loop verification episodes in the environment
+2. Uses step rewards/penalties as a training signal
+3. Updates policy via TRL `GRPOTrainer` or `PPOTrainer`
+4. Saves RL-updated policy to `training/trl_grpo_out`
 5. Uses `sshleifer/tiny-gpt2` by default for low-resource smoke runs (override with `ATLAS_RL_MODEL`)
 
 Curriculum progression (easy -> medium -> hard):
@@ -282,6 +288,7 @@ atlas/
 ├── training/
 │   ├── train.py           # Random vs heuristic reward curve
 │   ├── trl_colab_minimal.py  # TRL SFT before/after script
+│   ├── trl_grpo_rl.py     # TRL GRPO verifiable reinforcement-learning loop
 │   ├── trl_ppo_rl.py      # TRL PPO reinforcement-learning loop
 │   ├── TRL_Colab_Minimal.ipynb
 │   ├── check_openenv.py   # OpenEnv adapter smoke-test

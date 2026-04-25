@@ -1,5 +1,6 @@
 import asyncio
 import os
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
@@ -10,7 +11,21 @@ from backend.api import router
 from backend.db import init_db
 from backend.ws_manager import WSManager
 
-app = FastAPI(title="ATLAS Backend")
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Modern FastAPI lifespan handler replacing the deprecated @app.on_event."""
+    init_db()
+    sim_service = api_module.ensure_sim()
+    if sim_service.llm.is_enabled():
+        print("--- ATLAS AI Mode Active: LLM CEO is taking charge! ---")
+    else:
+        print("--- ATLAS Manual/Random Mode: No API keys found. ---")
+    yield
+    # Cleanup (if needed) goes here after yield
+
+
+app = FastAPI(title="ATLAS Backend", lifespan=lifespan)
 ws_manager = WSManager()
 stream_task = None
 stream_lock = asyncio.Lock()
@@ -30,16 +45,6 @@ app.include_router(router, prefix="/api")
 app.include_router(router)
 
 
-@app.on_event("startup")
-def startup():
-    init_db()
-    sim_service = api_module.ensure_sim()
-    if sim_service.llm.is_enabled():
-        print("--- ATLAS AI Mode Active: LLM CEO is taking charge! ---")
-    else:
-        print("--- ATLAS Manual/Random Mode: No API keys found. ---")
-
-
 async def simulation_stream_loop():
     global stream_task
     last_done_episode_id = None
@@ -52,7 +57,8 @@ async def simulation_stream_loop():
             sim = api_module.ensure_sim()
             if sim.done:
                 if sim.episode_id != last_done_episode_id:
-                    await ws_manager.broadcast("episode_done", {"final_state": sim.env.state.copy()})
+                    # Use state_snapshot() to avoid direct internal attribute access.
+                    await ws_manager.broadcast("episode_done", {"final_state": sim.env.state_snapshot()})
                     last_done_episode_id = sim.episode_id
                 await asyncio.sleep(1.0)
                 continue

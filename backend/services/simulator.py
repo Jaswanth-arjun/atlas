@@ -1,5 +1,5 @@
 import random
-from typing import Dict
+from typing import Dict, Optional
 
 from agents.employee import EmployeeAgent
 from agents.personalities import PERSONALITIES
@@ -9,11 +9,13 @@ from backend.services.llm_service import LLMService
 
 
 class SimulationService:
-    def __init__(self, preset: str = "startup", policy_name: str = "random"):
+    def __init__(self, preset: str = "startup", policy_name: str = "random",
+                 mandate: Optional[str] = None):
         self.preset = preset
         self.policy_name = policy_name
         self.env = AtlasStartupEnv(preset=preset)
-        self.obs, self.info = self.env.reset()
+        # Pass mandate as an option so env.reset() uses it; if None, env picks randomly.
+        self.obs, self.info = self.env.reset(options={"mandate": mandate} if mandate else None)
         self.done = False
         self.decision_log = []
         self.total_reward = 0.0
@@ -30,17 +32,20 @@ class SimulationService:
 
     def _start_episode(self):
         db = SessionLocal()
-        row = EpisodeLog(mode=self.preset, policy_name=self.policy_name)
-        db.add(row)
-        db.commit()
-        db.refresh(row)
-        self.episode_id = row.id
-        db.close()
+        try:
+            row = EpisodeLog(mode=self.preset, policy_name=self.policy_name)
+            db.add(row)
+            db.commit()
+            db.refresh(row)
+            self.episode_id = row.id
+        finally:
+            db.close()
 
     def step(self, action_idx=None) -> Dict:
         if action_idx is None:
             if self.llm.is_enabled():
-                state_plus = self.env.state.copy()
+                # Use state_snapshot() — public read-only view.
+                state_plus = self.env.state_snapshot()
                 state_plus["mandate"] = getattr(self.env, "mandate", "None")
                 action_idx = self.llm.get_action(state_plus)
             else:
@@ -51,9 +56,11 @@ class SimulationService:
         self.total_reward += reward
         action_name = ACTIONS[action_idx]
 
-        reactions = [agent.react(action_name, self.env.state) for agent in self.employee_agents]
+        # Use state_snapshot() — avoids exposing mutable internal dict to agent layer.
+        current_state = self.env.state_snapshot()
+        reactions = [agent.react(action_name, current_state) for agent in self.employee_agents]
         frame = {
-            "state": self.env.state.copy(),
+            "state": current_state,
             "day": info["day"],
             "phase": info["phase"],
             "mandate": getattr(self.env, "mandate", "None"),
@@ -72,32 +79,37 @@ class SimulationService:
 
     def _persist_step(self, frame: Dict) -> None:
         db = SessionLocal()
-        db.add(
-            StepLog(
-                episode_id=self.episode_id,
-                day=frame["day"],
-                phase=frame["phase"],
-                action=frame["action"],
-                reward=float(frame["reward"]),
-                event=frame["event"],
-                state=frame["state"],
+        try:
+            db.add(
+                StepLog(
+                    episode_id=self.episode_id,
+                    day=frame["day"],
+                    phase=frame["phase"],
+                    action=frame["action"],
+                    reward=float(frame["reward"]),
+                    event=frame["event"],
+                    state=frame["state"],
+                )
             )
-        )
-        db.commit()
-        db.close()
+            db.commit()
+        finally:
+            db.close()
 
     def _finalize_episode(self) -> None:
         db = SessionLocal()
-        ep = db.query(EpisodeLog).filter(EpisodeLog.id == self.episode_id).first()
-        if ep:
-            ep.total_reward = float(self.total_reward)
-            ep.steps = len(self.decision_log)
-            ep.final_cash = float(self.env.state["cash_balance"])
-            ep.final_revenue = float(self.env.state["revenue"])
-            ep.summary = {
-                "morale": self.env.state["employee_morale"],
-                "customer_satisfaction": self.env.state["customer_satisfaction"],
-                "investor_trust": self.env.state["investor_trust"],
-            }
-            db.commit()
-        db.close()
+        try:
+            ep = db.query(EpisodeLog).filter(EpisodeLog.id == self.episode_id).first()
+            if ep:
+                current_state = self.env.state_snapshot()
+                ep.total_reward = float(self.total_reward)
+                ep.steps = len(self.decision_log)
+                ep.final_cash = float(current_state["cash_balance"])
+                ep.final_revenue = float(current_state["revenue"])
+                ep.summary = {
+                    "morale": current_state["employee_morale"],
+                    "customer_satisfaction": current_state["customer_satisfaction"],
+                    "investor_trust": current_state["investor_trust"],
+                }
+                db.commit()
+        finally:
+            db.close()
