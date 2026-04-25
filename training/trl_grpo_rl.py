@@ -83,15 +83,20 @@ def verify_business_health(prompts, completions, obs_list=None, **kwargs):
             for k, v in zip(state_keys, actual_obs):
                 env.core.state[k] = float(v)
 
-        action_text = completion[0].strip() if isinstance(completion, list) else completion.strip()
-        try:
-            action_idx = ACTION_TOKENS.index(action_text)
+        action_text = str(completion[0] if isinstance(completion, list) else completion).lower()
+        
+        action_idx = -1
+        for idx, token in enumerate(ACTION_TOKENS):
+            if token.lower() in action_text:
+                action_idx = idx
+                break
+                
+        if action_idx != -1:
             _, reward, _, _, info = env.core.step(action_idx)
             # Multi-objective signal: include mandate compliance in the reward breakdown
-            mandate = info.get("mandate", "")
             mandate_bonus = info.get("reward_breakdown", {}).get("mandate_compliance", 0.0)
             rewards.append(float(reward) + mandate_bonus)
-        except ValueError:
+        else:
             rewards.append(-8.0)
 
     return rewards
@@ -102,9 +107,10 @@ def main():
     
     print("--- ATLAS GRPO Trainer (Verifiable RL) ---")
     if GRPOTrainer is None:
-        print("Warning: TRL GRPO not found in this environment. Ensure trl version supports GRPO.")
-        print("Falling back to simulated run logic for demonstration.")
-        return
+        raise RuntimeError(
+            "TRL GRPO is not available in this environment. "
+            "Install a TRL version that provides GRPOTrainer/GRPOConfig before running this script."
+        )
 
     model = AutoModelForCausalLM.from_pretrained(cfg.model_name)
     tokenizer = AutoTokenizer.from_pretrained(cfg.model_name)
@@ -122,6 +128,10 @@ def main():
         max_prompt_length=256,
         max_completion_length=10,
         num_generations=2,
+        generation_batch_size=2,
+        bf16=False,
+        fp16=False,
+        use_cpu=True,
     )
 
     # Generate real prompts AND obs vectors from actual environment rollouts
@@ -158,9 +168,17 @@ def main():
     print("Starting GRPO Training against Atlas Startup Verifier...")
     trainer.train()
     
-    model.save_pretrained(cfg.output_dir)
-    tokenizer.save_pretrained(cfg.output_dir)
-    print(f"Saved GRPO optimized model to {cfg.output_dir}")
+    # Check for degenerate learning signal (reward collapse)
+    logs = trainer.state.log_history
+    rewards = [l.get("reward", -8.0) for l in logs if "reward" in l]
+    is_degenerate = len(rewards) > 0 and max(rewards) <= -7.9
+    
+    if is_degenerate:
+        print("WARNING: Learning signal collapsed to constant penalty (-8.0). Skipping model save to avoid degenerate artifact.")
+    else:
+        model.save_pretrained(cfg.output_dir)
+        tokenizer.save_pretrained(cfg.output_dir)
+        print(f"Saved GRPO optimized model to {cfg.output_dir}")
 
 if __name__ == "__main__":
     main()
