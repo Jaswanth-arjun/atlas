@@ -20,13 +20,48 @@ endpoints:
         type: string
         default: startup
         enum: [startup, crisis, growth]
+      mandate:
+        type: string
+        required: false
+        description: Optional board mandate override. One of the three strategic directives.
+        enum:
+          - "Maximize Growth: Prioritize product progress and revenue even if burn rate increases."
+          - "Cost Efficiency: Minimize burn rate and preserve cash balance at all costs."
+          - "Balanced Stability: Maintain a healthy balance between employee morale and revenue."
   step:
     method: POST
     path: /step
     body:
       action_idx:
         type: integer
-        description: Discrete action index (0-12)
+        description: Discrete action index (0-12). See ACTIONS list in env/startup_env.py.
   state:
     method: GET
     path: /state
+  observation:
+    method: GET
+    path: /state
+    description: Alias for state — returns AtlasObservation (state, reward, done, info).
+
+rubric:
+  - name: revenue_reward
+    description: Agent earns reward proportional to monthly revenue (0.00005 × revenue)
+    weight: 0.20
+  - name: morale_reward
+    description: Positive reward for high employee morale (0.02 × employee_morale)
+    weight: 0.20
+  - name: customer_reward
+    description: Positive reward for customer satisfaction (0.02 × customer_satisfaction)
+    weight: 0.20
+  - name: trust_reward
+    description: Positive reward for investor trust (0.01 × investor_trust)
+    weight: 0.10
+  - name: burn_penalty
+    description: Penalty for high cash burn rate (-0.00004 × burn_rate)
+    weight: 0.15
+  - name: crisis_penalty
+    description: Penalty for active crises (-0.02 × crises)
+    weight: 0.10
+  - name: invalid_action_penalty
+    description: Penalty of -8.0 for any action index outside [0-12]
+    weight: 0.05

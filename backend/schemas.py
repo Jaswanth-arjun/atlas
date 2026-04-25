@@ -5,6 +5,8 @@ from pydantic import BaseModel
 
 class ResetRequest(BaseModel):
     preset: str = "startup"
+    mandate: Optional[str] = None  # Optional board mandate override (see MANDATES in startup_env.py)
+
 
 
 class StepRequest(BaseModel):

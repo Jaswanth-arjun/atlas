@@ -46,8 +46,12 @@ class AtlasStartupEnv(gym.Env):
         self.preset = preset
         self.max_days = 90
         self.action_space = spaces.Discrete(len(ACTIONS))
+        # FIX ENV #3: Use per-metric bounds instead of uniform 2M.
+        # Each dimension: cash, revenue, burn, morale, progress, csat, trust, tasks, crises, trend
         self.observation_space = spaces.Box(
-            low=0, high=2_000_000, shape=(10,), dtype=np.float32
+            low=np.array([0, 0, 0, 0, 0, 0, 0, 0, 0, -100], dtype=np.float32),
+            high=np.array([2_000_000, 2_000_000, 2_000_000, 100, 100, 100, 100, 100, 20, 100], dtype=np.float32),
+            dtype=np.float32,
         )
         self.day = 1
         self.phase_idx = 0
@@ -248,17 +252,21 @@ class AtlasStartupEnv(gym.Env):
         return float(reward_breakdown["action_reward"]), reward_breakdown
 
     def _apply_event(self, event: str) -> float:
+        """FIX ENV #1 & #2: Handle all 10 events with correct rewards and market_trend updates."""
         if event == "server_outage":
             self.state["customer_satisfaction"] -= 8
             self.state["crises"] += 1
+            self.state["market_trend"] -= 5
             return -5.0
         if event == "market_crash":
             self.state["revenue"] *= 0.85
             self.state["investor_trust"] -= 6
+            self.state["market_trend"] -= 20
             return -6.0
         if event == "viral_growth":
             self.state["revenue"] *= 1.25
             self.state["customer_satisfaction"] += 3
+            self.state["market_trend"] += 15
             return 8.0
         if event == "key_employee_resigns":
             self.state["product_progress"] -= 4
@@ -267,8 +275,33 @@ class AtlasStartupEnv(gym.Env):
         if event == "customer_complaints_spike":
             self.state["customer_satisfaction"] -= 10
             self.state["crises"] += 1
+            self.state["market_trend"] -= 8
             return -6.0
-        return -1.0 if "risk" in event or "delayed" in event else 1.0
+        # FIX: Previously these 5 events fell through with wrong rewards.
+        if event == "investor_metrics_request":
+            # Neutral — slight pressure to perform; no state change, small negative reward
+            self.state["investor_trust"] -= 1
+            return -0.5
+        if event == "competitor_feature_launch":
+            # Negative — competitor gains edge; reduce product_progress advantage
+            self.state["customer_satisfaction"] -= 4
+            self.state["market_trend"] -= 10
+            return -4.0
+        if event == "hiring_freeze":
+            # Negative — can't grow team; reduce morale
+            self.state["employee_morale"] -= 3
+            self.state["pending_tasks"] += 2
+            return -3.0
+        if event == "lawsuit_risk":
+            self.state["investor_trust"] -= 5
+            self.state["cash_balance"] -= 20000
+            return -5.0
+        if event == "sales_deal_delayed":
+            self.state["revenue"] -= 3000
+            self.state["investor_trust"] -= 2
+            return -3.0
+        # Unknown event fallback
+        return 0.0
 
     def render(self):
         return f"Day {self.day} {PHASES[self.phase_idx]} :: {self.state}"
@@ -302,6 +335,10 @@ class AtlasOpenEnv(OpenEnvBase):
         s = self.core.state.copy()
         s["mandate"] = getattr(self, "mandate", "None")
         return s
+
+    def state_snapshot(self) -> Dict[str, float]:
+        """Public read-only view — delegates to core env."""
+        return self.core.state_snapshot()
 
     def render(self):
         return self.core.render()

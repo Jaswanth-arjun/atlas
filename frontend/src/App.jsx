@@ -89,7 +89,9 @@ export default function App() {
       if (useStore.getState().state === null) {
         const current = await api.getState();
         setState(current.data.state);
-        setEpisodeId(current.data.episode_id);
+        // episode_id is now nested under info (AtlasObservation-compatible response shape)
+        const episodeId = current.data.info?.episode_id ?? current.data.episode_id ?? null;
+        setEpisodeId(episodeId);
         setMoraleHistory([{ name: "S1", mood: current.data.state.employee_morale }]);
       }
       loadLeaderboard();
@@ -289,9 +291,9 @@ export default function App() {
 
           <section id="section-decisions" className="grid gap-4 lg:grid-cols-2">
             <DecisionLog decisions={decisions} done={done} />
-            <div id="section-market">
+            <section id="section-market">
               <EventFeed events={events} />
-            </div>
+            </section>
           </section>
 
           <section id="section-reports">

@@ -22,5 +22,11 @@ COPY backend/ ./backend/
 COPY env/ ./env/
 COPY agents/ ./agents/
 
+# Copy OpenEnv manifest (required by OpenEnv clients and judges)
+COPY openenv.yaml .
+
+# Copy training evidence plots so they are accessible inside the container
+COPY training/*.png ./training/
+
 # Command to run the FastAPI app via Uvicorn
 CMD ["uvicorn", "backend.main:app", "--host", "0.0.0.0", "--port", "7860"]

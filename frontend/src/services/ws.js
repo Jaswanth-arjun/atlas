@@ -16,7 +16,13 @@ export function connectWS(onEvent, onStatusChange) {
       if (onStatusChange) onStatusChange("Online");
     };
 
-    ws.onmessage = (msg) => onEvent(JSON.parse(msg.data));
+    ws.onmessage = (msg) => {
+      try {
+        onEvent(JSON.parse(msg.data));
+      } catch (e) {
+        console.warn("ATLAS WS: failed to parse message", e);
+      }
+    };
     
     ws.onclose = () => {
       if (closedByUser) return;

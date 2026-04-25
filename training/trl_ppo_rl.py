@@ -4,6 +4,10 @@ import sys
 from dataclasses import dataclass
 from typing import Dict, List, Tuple
 
+import matplotlib
+matplotlib.use("Agg")  # headless-safe backend
+import matplotlib.pyplot as plt
+
 import numpy as np
 import torch
 
@@ -256,6 +260,8 @@ def _run_reinforce_curriculum(cfg: RunConfig) -> None:
     print(f"Mean episode reward: {float(rewards_np.mean()):.2f}")
     print(f"Best episode reward: {float(rewards_np.max()):.2f}")
 
+    _save_ppo_reward_curve(episode_rewards, cfg.output_dir)
+
 
 def main() -> None:
     cfg = RunConfig()
@@ -403,6 +409,48 @@ def main() -> None:
     print(f"Saved PPO RL policy to: {cfg.output_dir}")
     print(f"Mean episode reward: {float(rewards_np.mean()):.2f}")
     print(f"Best episode reward: {float(rewards_np.max()):.2f}")
+
+    _save_ppo_reward_curve(episode_rewards, cfg.output_dir)
+
+
+def _save_ppo_reward_curve(episode_rewards: List[float], output_dir: str) -> None:
+    """Save a PPO reward curve with episode rewards and a rolling-average baseline overlay."""
+    n = len(episode_rewards)
+    if n == 0:
+        return
+
+    episodes = list(range(1, n + 1))
+
+    # Random baseline: a flat line at the average reward of the first 3 episodes
+    # (or the overall mean if fewer than 3 episodes ran).
+    baseline_val = float(np.mean(episode_rewards[:3])) if n >= 3 else float(np.mean(episode_rewards))
+    baseline = [baseline_val] * n
+
+    # 3-episode rolling average of the trained policy
+    rolling: List[float] = []
+    for i in range(n):
+        window = episode_rewards[max(0, i - 2): i + 1]
+        rolling.append(float(np.mean(window)))
+
+    fig, ax = plt.subplots(figsize=(10, 5))
+    ax.plot(episodes, episode_rewards, marker="o", alpha=0.6, color="steelblue", label="Episode Reward (PPO policy)")
+    ax.plot(episodes, rolling, color="darkorange", linewidth=2, label="Rolling Avg (3-ep window)")
+    ax.plot(episodes, baseline, color="gray", linestyle="--", linewidth=1.5, label=f"Baseline (first-3-ep avg = {baseline_val:.1f})")
+    ax.set_title("ATLAS TRL PPO: Episode Rewards During Training", fontsize=13, fontweight="bold")
+    ax.set_xlabel("Episode (training step)", fontsize=11)
+    ax.set_ylabel("Total Reward (cumulative per episode)", fontsize=11)
+    ax.legend(fontsize=10)
+    ax.grid(True, alpha=0.3)
+    fig.tight_layout()
+
+    # Save to both the model output dir and the canonical training/ folder.
+    os.makedirs("training", exist_ok=True)
+    canonical_path = os.path.join("training", "trl_ppo_reward_curve.png")
+    out_path = os.path.join(output_dir, "trl_ppo_reward_curve.png")
+    fig.savefig(canonical_path, dpi=120)
+    fig.savefig(out_path, dpi=120)
+    plt.close(fig)
+    print(f"Saved PPO reward curve to: {canonical_path}")
 
 
 if __name__ == "__main__":

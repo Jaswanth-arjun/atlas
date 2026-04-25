@@ -15,7 +15,7 @@ export const useStore = create(
       moraleHistory: [],
       leaderboard: [],
       currentDay: 1,
-      currentPhase: 'Morning',
+      currentPhase: 'morning',
 
       setState: (state) => set({ state }),
       setMode: (mode) => set({ mode }),
