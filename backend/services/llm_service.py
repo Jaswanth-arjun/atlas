@@ -2,6 +2,7 @@ import os
 import random
 import requests
 import logging
+import time
 
 logger = logging.getLogger(__name__)
 
@@ -11,6 +12,21 @@ class LLMService:
         self.openai_key = os.getenv("OPENAI_API_KEY")
         self.gemini_key = os.getenv("GEMINI_API_KEY")
         self.anthropic_key = os.getenv("ANTHROPIC_API_KEY")
+        self._consecutive_failures = 0
+        self._disabled_until_ts = 0.0
+
+    def _fallback_action(self):
+        return random.randint(0, 12)
+
+    def _on_success(self):
+        self._consecutive_failures = 0
+        self._disabled_until_ts = 0.0
+
+    def _on_failure(self):
+        self._consecutive_failures += 1
+        if self._consecutive_failures >= 3:
+            # Enter cooldown to avoid repeated failing network calls each step.
+            self._disabled_until_ts = time.time() + 60
         
     def is_enabled(self):
         return bool(self.hf_token or self.openai_key or self.gemini_key or self.anthropic_key)
@@ -52,6 +68,9 @@ Your available actions (Reply with ONLY the index number):
 
 Reply with ONLY a single number from 0 to 12."""
 
+        if self._disabled_until_ts > time.time():
+            return self._fallback_action()
+
         if self.gemini_key:
             return self._call_gemini(prompt)
         elif self.openai_key:
@@ -61,7 +80,7 @@ Reply with ONLY a single number from 0 to 12."""
         elif self.hf_token:
             return self._call_huggingface(prompt)
         else:
-            return random.randint(0, 12)
+            return self._fallback_action()
 
     def _call_gemini(self, prompt):
         try:
@@ -72,10 +91,14 @@ Reply with ONLY a single number from 0 to 12."""
             prediction = response.text.strip()
             digits = "".join([c for c in prediction if c.isdigit()])
             if digits:
-                return int(digits)
+                action = int(digits)
+                if 0 <= action <= 12:
+                    self._on_success()
+                    return action
         except Exception as e:
             logger.error(f"Gemini API Error: {e}")
-        return random.randint(0, 10)
+            self._on_failure()
+        return self._fallback_action()
 
     def _call_anthropic(self, prompt):
         try:
@@ -89,10 +112,14 @@ Reply with ONLY a single number from 0 to 12."""
             prediction = message.content[0].text.strip()
             digits = "".join([c for c in prediction if c.isdigit()])
             if digits:
-                return int(digits)
+                action = int(digits)
+                if 0 <= action <= 12:
+                    self._on_success()
+                    return action
         except Exception as e:
             logger.error(f"Anthropic API Error: {e}")
-        return random.randint(0, 10)
+            self._on_failure()
+        return self._fallback_action()
 
     def _call_huggingface(self, prompt):
         API_URL = "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.2"
@@ -109,10 +136,14 @@ Reply with ONLY a single number from 0 to 12."""
             prediction = response.json()[0]["generated_text"].strip()
             digits = "".join([c for c in prediction if c.isdigit()])
             if digits:
-                return int(digits)
+                action = int(digits)
+                if 0 <= action <= 12:
+                    self._on_success()
+                    return action
         except Exception as e:
             logger.error(f"HuggingFace API Error: {e}")
-        return random.randint(0, 10)
+            self._on_failure()
+        return self._fallback_action()
 
     def _call_openai(self, prompt):
         try:
@@ -127,7 +158,11 @@ Reply with ONLY a single number from 0 to 12."""
             prediction = response.choices[0].message.content.strip()
             digits = "".join([c for c in prediction if c.isdigit()])
             if digits:
-                return int(digits)
+                action = int(digits)
+                if 0 <= action <= 12:
+                    self._on_success()
+                    return action
         except Exception as e:
             logger.error(f"OpenAI API Error: {e}")
-        return random.randint(0, 10)
+            self._on_failure()
+        return self._fallback_action()

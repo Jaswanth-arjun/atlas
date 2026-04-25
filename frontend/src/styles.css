@@ -2,6 +2,83 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer base {
+  body {
+    @apply bg-slate-950 text-slate-100 antialiased;
+    background:
+      radial-gradient(circle at 15% 10%, rgba(56, 189, 248, 0.14), transparent 28%),
+      radial-gradient(circle at 90% 0%, rgba(168, 85, 247, 0.16), transparent 32%),
+      #030712;
+  }
+}
+
+@layer components {
+  .dashboard-shell {
+    @apply h-screen overflow-hidden p-4 md:p-6;
+  }
+
+  .dashboard-grid {
+    @apply mx-auto flex h-full max-w-[1500px] gap-4 md:gap-6;
+  }
+
+  .sidebar-panel {
+    @apply hidden h-full w-64 shrink-0 rounded-2xl border border-cyan-500/20 bg-slate-950/70 p-4 shadow-[0_0_40px_rgba(34,211,238,0.08)] backdrop-blur lg:flex lg:flex-col;
+  }
+
+  .main-panel {
+    @apply flex-1 space-y-4 overflow-y-auto pr-1;
+  }
+
+  .glass-card {
+    @apply rounded-2xl border border-slate-700/70 bg-slate-900/75 p-4 shadow-[0_0_40px_rgba(14,165,233,0.08)] backdrop-blur;
+  }
+
+  .chart-card {
+    @apply glass-card h-80;
+  }
+
+  .panel-title {
+    @apply mb-3 text-sm font-semibold tracking-wide text-slate-100;
+  }
+
+  .panel-muted {
+    @apply text-xs uppercase tracking-[0.18em] text-slate-400;
+  }
+
+  .top-button {
+    @apply rounded-xl border border-slate-600/70 bg-slate-900/70 px-4 py-2 text-sm font-medium text-slate-100 transition hover:border-cyan-400/60 hover:text-cyan-200;
+  }
+
+  .top-button-primary {
+    @apply rounded-xl border border-violet-400/70 bg-violet-500/20 px-4 py-2 text-sm font-semibold text-violet-100 transition hover:bg-violet-500/30;
+  }
+
+  .metric-tile {
+    @apply rounded-xl border border-slate-700/70 bg-slate-950/60 p-3;
+  }
+}
+
 .card {
-  @apply bg-slate-900 border border-slate-800 rounded-xl p-4 shadow;
+  @apply glass-card;
+}
+
+.recharts-tooltip-wrapper .recharts-default-tooltip {
+  @apply rounded-lg border border-slate-700 !bg-slate-900/90;
+}
+
+* {
+  scrollbar-color: #334155 #0b1120;
+}
+
+*::-webkit-scrollbar {
+  width: 8px;
+}
+
+*::-webkit-scrollbar-track {
+  background: #0b1120;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: #334155;
+  border-radius: 999px;
 }

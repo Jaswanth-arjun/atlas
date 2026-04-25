@@ -2,9 +2,9 @@ import React from "react";
 
 function Stat({ title, value }) {
   return (
-    <div className="card">
-      <div className="text-slate-400 text-xs">{title}</div>
-      <div className="text-xl font-semibold mt-1">{value}</div>
+    <div className="metric-tile">
+      <div className="panel-muted">{title}</div>
+      <div className="mt-1 text-xl font-semibold text-cyan-200">{value}</div>
     </div>
   );
 }
@@ -12,7 +12,7 @@ function Stat({ title, value }) {
 export default function StatsGrid({ state }) {
   if (!state) return null;
   return (
-    <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+    <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
       <Stat title="Cash" value={`$${Math.round(state.cash_balance).toLocaleString()}`} />
       <Stat title="Revenue" value={`$${Math.round(state.revenue).toLocaleString()}`} />
       <Stat title="Burn Rate" value={`$${Math.round(state.burn_rate).toLocaleString()}`} />

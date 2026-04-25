@@ -4,7 +4,6 @@ import os
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
 
 import backend.api as api_module
 from backend.api import router
@@ -13,6 +12,8 @@ from backend.ws_manager import WSManager
 
 app = FastAPI(title="ATLAS Backend")
 ws_manager = WSManager()
+stream_task = None
+stream_lock = asyncio.Lock()
 
 app.add_middleware(
     CORSMiddleware,
@@ -39,12 +40,19 @@ def startup():
         print("--- ATLAS Manual/Random Mode: No API keys found. ---")
 
 
-@app.websocket("/ws")
-async def ws_endpoint(ws: WebSocket):
-    await ws_manager.connect(ws)
+async def simulation_stream_loop():
+    global stream_task
+    last_done_episode_id = None
     try:
-        sim = api_module.ensure_sim()
-        while True:
+        while ws_manager.connections:
+            sim = api_module.ensure_sim()
+            if sim.done:
+                if sim.episode_id != last_done_episode_id:
+                    await ws_manager.broadcast("episode_done", {"final_state": sim.env.state.copy()})
+                    last_done_episode_id = sim.episode_id
+                await asyncio.sleep(1.0)
+                continue
+
             frame = sim.step()
             await ws_manager.broadcast("state_update", frame)
             if frame["event"]:
@@ -52,9 +60,30 @@ async def ws_endpoint(ws: WebSocket):
             await ws_manager.broadcast("reward_update", {"reward": frame["reward"]})
             if frame["done"]:
                 await ws_manager.broadcast("episode_done", {"final_state": frame["state"]})
-                break
+                last_done_episode_id = frame["episode_id"]
             await asyncio.sleep(1.0)
+    finally:
+        stream_task = None
+
+
+async def ensure_stream_started():
+    global stream_task
+    async with stream_lock:
+        if stream_task is None or stream_task.done():
+            stream_task = asyncio.create_task(simulation_stream_loop())
+
+
+@app.websocket("/ws")
+async def ws_endpoint(ws: WebSocket):
+    await ws_manager.connect(ws)
+    await ensure_stream_started()
+    try:
+        while True:
+            # Keep socket alive; server pushes updates through broadcast.
+            await ws.receive_text()
     except WebSocketDisconnect:
+        pass
+    finally:
         ws_manager.disconnect(ws)
 
 # Mount frontend static files if they exist (for production deployment)

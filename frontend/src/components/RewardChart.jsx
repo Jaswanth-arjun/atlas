@@ -1,9 +1,9 @@
 import React from "react";
 
 import {
+  Area,
+  AreaChart,
   CartesianGrid,
-  Line,
-  LineChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -12,24 +12,32 @@ import {
 
 export default function RewardChart({ data }) {
   return (
-    <div className="card h-72">
-      <h2 className="font-semibold mb-2">Training Reward Curve (Live)</h2>
+    <div className="chart-card">
+      <div className="panel-title">AI Performance</div>
       <ResponsiveContainer width="100%" height="90%">
-        <LineChart data={data}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-          <XAxis dataKey="step" stroke="#94a3b8" />
-          <YAxis stroke="#94a3b8" />
+        <AreaChart data={data}>
+          <defs>
+            <linearGradient id="rewardFill" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="5%" stopColor="#c084fc" stopOpacity={0.4} />
+              <stop offset="95%" stopColor="#c084fc" stopOpacity={0} />
+            </linearGradient>
+          </defs>
+          <CartesianGrid strokeDasharray="4 4" stroke="#1e293b" />
+          <XAxis dataKey="step" stroke="#64748b" />
+          <YAxis stroke="#64748b" />
           <Tooltip />
-          <Line
+          <Area
             type="monotone"
             dataKey="reward"
-            stroke="#f59e0b"
+            stroke="#c084fc"
+            fill="url(#rewardFill)"
+            strokeWidth={2.8}
             dot={false}
             isAnimationActive
             animationDuration={280}
             animationEasing="linear"
           />
-        </LineChart>
+        </AreaChart>
       </ResponsiveContainer>
     </div>
   );

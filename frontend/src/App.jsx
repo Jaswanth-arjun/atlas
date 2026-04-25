@@ -11,6 +11,7 @@ import { api } from "./services/api";
 import { connectWS } from "./services/ws";
 
 const MAX_POINTS = 120;
+const NAV_ITEMS = ["Dashboard", "Overview", "Analytics", "Decisions", "Market", "Team", "Reports", "Settings"];
 
 export default function App() {
   const [state, setState] = useState(null);
@@ -21,7 +22,9 @@ export default function App() {
   const [decisions, setDecisions] = useState([]);
   const [rewards, setRewards] = useState([]);
   const [history, setHistory] = useState([]);
+  const [moraleHistory, setMoraleHistory] = useState([]);
   const [leaderboard, setLeaderboard] = useState([]);
+  const [activeNav, setActiveNav] = useState("Dashboard");
 
   useEffect(() => {
     boot();
@@ -39,6 +42,9 @@ export default function App() {
             { step: h.length + 1, revenue: payload.state.revenue, cash: payload.state.cash_balance },
           ].slice(-MAX_POINTS),
         );
+        setMoraleHistory((m) =>
+          [...m, { name: `S${payload.day}`, mood: payload.state.employee_morale }].slice(-10),
+        );
       }
       if (data.type === "market_event" && data.payload?.event) {
         setEvents((e) => [data.payload.event, ...e].slice(0, 30));
@@ -55,10 +61,15 @@ export default function App() {
   }, []);
 
   async function boot() {
-    const current = await api.getState();
-    setState(current.data.state);
-    setEpisodeId(current.data.episode_id);
-    await loadLeaderboard();
+    try {
+      const current = await api.getState();
+      setState(current.data.state);
+      setEpisodeId(current.data.episode_id);
+      setMoraleHistory([{ name: "S1", mood: current.data.state.employee_morale }]);
+      loadLeaderboard();
+    } catch (_error) {
+      // Keep app responsive even if one boot call fails temporarily.
+    }
   }
 
   async function loadLeaderboard() {
@@ -74,6 +85,7 @@ export default function App() {
     setDecisions([]);
     setRewards([]);
     setHistory([]);
+    setMoraleHistory([{ name: "S1", mood: resetRes.data.state.employee_morale }]);
     setDone(false);
     await loadLeaderboard();
   }
@@ -85,6 +97,7 @@ export default function App() {
     setDecisions([]);
     setRewards([]);
     setHistory([]);
+    setMoraleHistory([]);
     setDone(false);
 
     for (let i = 0; i < steps.length; i += 1) {
@@ -98,6 +111,9 @@ export default function App() {
         [...h, { step: h.length + 1, revenue: step.state.revenue, cash: step.state.cash_balance }].slice(
           -MAX_POINTS,
         ),
+      );
+      setMoraleHistory((m) =>
+        [...m, { name: `S${step.day}`, mood: step.state.employee_morale }].slice(-10),
       );
       if (step.event?.name) {
         setEvents((e) => [step.event.name, ...e].slice(0, 30));
@@ -116,57 +132,145 @@ export default function App() {
     anchor.click();
   }
 
-  const mood = useMemo(() => {
-    if (!state) return [];
-    return [
-      { name: "Engineering", mood: state.employee_morale - 2 },
-      { name: "Sales", mood: state.employee_morale + 2 },
-      { name: "HR", mood: state.employee_morale + 1 },
-      { name: "Finance", mood: state.employee_morale - 1 },
-      { name: "CS", mood: state.employee_morale + 0.5 },
+  const mood = useMemo(() => moraleHistory, [moraleHistory]);
+
+  useEffect(() => {
+    const sectionMap = [
+      { id: "section-dashboard", nav: "Dashboard" },
+      { id: "section-overview", nav: "Overview" },
+      { id: "section-analytics", nav: "Analytics" },
+      { id: "section-decisions", nav: "Decisions" },
+      { id: "section-market", nav: "Market" },
+      { id: "section-team", nav: "Team" },
+      { id: "section-reports", nav: "Reports" },
+      { id: "section-settings", nav: "Settings" },
     ];
-  }, [state]);
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visible = entries
+          .filter((entry) => entry.isIntersecting)
+          .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+        if (!visible) return;
+        const match = sectionMap.find((section) => section.id === visible.target.id);
+        if (match) setActiveNav(match.nav);
+      },
+      { threshold: [0.25, 0.5, 0.75], rootMargin: "-10% 0px -50% 0px" },
+    );
+
+    sectionMap.forEach((section) => {
+      const node = document.getElementById(section.id);
+      if (node) observer.observe(node);
+    });
+
+    return () => observer.disconnect();
+  }, []);
+
+  function goToSection(item) {
+    const targetId = `section-${item.toLowerCase()}`;
+    const node = document.getElementById(targetId);
+    if (node) {
+      node.scrollIntoView({ behavior: "smooth", block: "start" });
+      setActiveNav(item);
+    }
+  }
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 p-6">
-      <h1 className="text-3xl font-bold mb-6">ATLAS: Multi-Agent Startup Management Simulation</h1>
+    <div className="dashboard-shell">
+      <div className="dashboard-grid">
+        <aside className="sidebar-panel">
+          <div className="mb-8">
+            <div className="text-2xl font-bold tracking-wide text-cyan-300">ATLAS</div>
+            <div className="mt-1 text-xs text-slate-400">AI CEO Dashboard</div>
+          </div>
 
-      <div className="flex flex-wrap gap-2 mb-6">
-        <select
-          className="bg-slate-900 border border-slate-700 rounded px-3 py-2"
-          value={mode}
-          onChange={(e) => setMode(e.target.value)}
-        >
-          <option value="startup">Startup</option>
-          <option value="crisis">Crisis</option>
-          <option value="growth">Growth</option>
-        </select>
-        <button className="bg-indigo-600 rounded px-4 py-2" onClick={onReset}>
-          Restart Simulation
-        </button>
-        <button className="bg-emerald-600 rounded px-4 py-2" onClick={exportCsv}>
-          Download CSV
-        </button>
-        {episodeId && (
-          <a
-            className="bg-fuchsia-600 rounded px-4 py-2"
-            href={api.investorReport(episodeId)}
-            target="_blank"
-          >
-            Investor PDF
-          </a>
-        )}
-      </div>
+          <nav className="space-y-2 text-sm">
+            {NAV_ITEMS.map((item) => (
+              <button
+                key={item}
+                type="button"
+                onClick={() => goToSection(item)}
+                className={`w-full rounded-xl border px-3 py-2 text-left transition ${
+                  activeNav === item
+                    ? "border-cyan-400/60 bg-cyan-500/10 text-cyan-200"
+                    : "border-transparent text-slate-300 hover:border-slate-600 hover:bg-slate-800/30"
+                }`}
+              >
+                {item}
+              </button>
+            ))}
+          </nav>
 
-      <StatsGrid state={state} />
+          <div className="mt-auto space-y-2 rounded-xl border border-emerald-400/20 bg-emerald-500/5 p-3 text-xs">
+            <div className="text-emerald-300">System Status</div>
+            <div className="font-medium text-emerald-200">Online</div>
+          </div>
+        </aside>
 
-      <div className="grid md:grid-cols-2 gap-4 mt-4">
-        <RevenueCashChart data={history} />
-        <RewardChart data={rewards} />
-        <EmployeeMoodChart data={mood} />
-        <EventFeed events={events} />
-        <DecisionLog decisions={decisions} done={done} />
-        <LeaderboardPanel rows={leaderboard} onReplay={onReplay} onPdf={api.investorReport} />
+        <main className="main-panel">
+          <header id="section-dashboard" className="glass-card">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="rounded-xl border border-violet-400/30 bg-violet-500/10 px-4 py-2 text-sm text-violet-100">
+                Day 45 &middot; Afternoon Phase
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <select
+                  className="top-button"
+                  value={mode}
+                  onChange={(e) => setMode(e.target.value)}
+                >
+                  <option value="startup">Startup</option>
+                  <option value="crisis">Crisis</option>
+                  <option value="growth">Growth</option>
+                </select>
+                <button className="top-button" onClick={onReset}>
+                  Reset Simulation
+                </button>
+                <button className="top-button" onClick={exportCsv}>
+                  Download CSV
+                </button>
+                {episodeId && (
+                  <a className="top-button-primary" href={api.investorReport(episodeId)} target="_blank">
+                    Generate Report
+                  </a>
+                )}
+              </div>
+            </div>
+          </header>
+
+          <section id="section-overview">
+            <StatsGrid state={state} />
+          </section>
+
+          <section id="section-analytics" className="grid gap-4 lg:grid-cols-2">
+            <RevenueCashChart data={history} />
+            <RewardChart data={rewards} />
+          </section>
+
+          <section id="section-team">
+            <EmployeeMoodChart
+              data={mood}
+              currentMorale={state?.employee_morale ?? 0}
+              currentSatisfaction={state?.customer_satisfaction ?? 0}
+            />
+          </section>
+
+          <section id="section-decisions" className="grid gap-4 lg:grid-cols-2">
+            <DecisionLog decisions={decisions} done={done} />
+            <div id="section-market">
+              <EventFeed events={events} />
+            </div>
+          </section>
+
+          <section id="section-reports">
+            <LeaderboardPanel rows={leaderboard} onReplay={onReplay} onPdf={api.investorReport} />
+          </section>
+
+          <section id="section-settings" className="glass-card">
+            <div className="panel-title mb-1">Settings</div>
+            <p className="text-sm text-slate-400">Use the controls in the top bar to change mode, reset, export CSV, and generate report.</p>
+          </section>
+        </main>
       </div>
     </div>
   );

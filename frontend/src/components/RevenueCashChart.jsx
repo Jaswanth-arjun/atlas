@@ -1,9 +1,10 @@
 import React from "react";
 
 import {
+  Area,
+  AreaChart,
   CartesianGrid,
-  Line,
-  LineChart,
+  Legend,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -12,33 +13,50 @@ import {
 
 export default function RevenueCashChart({ data }) {
   return (
-    <div className="card h-72">
-      <h2 className="font-semibold mb-2">Revenue & Cash Runway</h2>
+    <div className="chart-card">
+      <div className="panel-title">Financial Overview</div>
       <ResponsiveContainer width="100%" height="90%">
-        <LineChart data={data}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-          <XAxis dataKey="step" stroke="#94a3b8" />
-          <YAxis stroke="#94a3b8" />
+        <AreaChart data={data}>
+          <defs>
+            <linearGradient id="revenueFill" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="5%" stopColor="#2dd4bf" stopOpacity={0.35} />
+              <stop offset="95%" stopColor="#2dd4bf" stopOpacity={0} />
+            </linearGradient>
+            <linearGradient id="cashFill" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="5%" stopColor="#60a5fa" stopOpacity={0.35} />
+              <stop offset="95%" stopColor="#60a5fa" stopOpacity={0} />
+            </linearGradient>
+          </defs>
+          <CartesianGrid strokeDasharray="4 4" stroke="#1e293b" />
+          <XAxis dataKey="step" stroke="#64748b" />
+          <YAxis stroke="#64748b" />
           <Tooltip />
-          <Line
+          <Legend wrapperStyle={{ color: "#cbd5e1", fontSize: "12px" }} />
+          <Area
             type="monotone"
             dataKey="revenue"
-            stroke="#22c55e"
+            name="Revenue"
+            stroke="#2dd4bf"
+            fill="url(#revenueFill)"
+            strokeWidth={2.6}
             dot={false}
             isAnimationActive
             animationDuration={280}
             animationEasing="linear"
           />
-          <Line
+          <Area
             type="monotone"
             dataKey="cash"
-            stroke="#38bdf8"
+            name="Cash Balance"
+            stroke="#60a5fa"
+            fill="url(#cashFill)"
+            strokeWidth={2.6}
             dot={false}
             isAnimationActive
             animationDuration={280}
             animationEasing="linear"
           />
-        </LineChart>
+        </AreaChart>
       </ResponsiveContainer>
     </div>
   );
