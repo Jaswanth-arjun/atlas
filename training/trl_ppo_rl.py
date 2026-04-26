@@ -413,6 +413,20 @@ def main() -> None:
             f"steps={steps} | total_reward={total_reward:.2f}"
         )
 
+        # Auto-append episode summary to TRAINING_LOGS.md
+        log_file_path = os.path.join(PROJECT_ROOT, "TRAINING_LOGS.md")
+        try:
+            with open(log_file_path, "a", encoding="utf-8") as f:
+                f.write(f"\n### 🔄 Auto-Log: Episode {ep + 1} (Stage: {stage['name']})\n")
+                f.write(f"* **Total Reward:** {total_reward:.2f}\n")
+                f.write(f"* **Steps Survived:** {steps}/{stage['max_steps']}\n")
+                if "reward_breakdown" in _info:
+                    f.write(f"* **Final Step Reward Breakdown:** {_info['reward_breakdown']}\n")
+                f.write("---\n")
+        except Exception as e:
+            pass
+
+
     model.save_pretrained(cfg.output_dir)
     tokenizer.save_pretrained(cfg.output_dir)
 
