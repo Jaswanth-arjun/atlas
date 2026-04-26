@@ -45,6 +45,12 @@ ATLAS trains an LLM-based CEO agent to navigate hiring, product launches, financ
 - **Dynamic events** -- server outages, market crashes, viral growth, employee resignations
 - **Dense reward** every step + large terminal reward for survival/growth
 
+### 📋 Interactive Board Mandate (Instruction Following)
+To explicitly test the hackathon's **Instruction Following** and **Long-Horizon Planning** themes, ATLAS features a dynamic Board Mandate system:
+- Users can set the mandate via the **Settings UI** (e.g., *Maximize Growth*, *Cost Efficiency*, or *Balanced Stability*).
+- The active mandate is injected into the LLM's system prompt and tracked in the environment.
+- The `mandate_compliance` reward signal assigns penalties if the agent's actions oppose the active directive, proving the AI can adapt its entire strategy based on a single high-level instruction.
+
 ## Agent Capabilities
 
 The CEO agent is expected to demonstrate the following capabilities in a partially observable, dynamic world:
