@@ -251,6 +251,7 @@ export default function App() {
         <main className="main-panel">
           <header id="section-dashboard" className="glass-card">
             <div className="flex flex-wrap items-center justify-between gap-3">
+              {/* Left side: Status indicators */}
               <div className="flex flex-wrap items-center gap-2">
                 <div className="rounded-xl border border-violet-400/30 bg-violet-500/10 px-4 py-2 text-sm text-violet-100">
                   {isReplayModeRef.current ? "[REPLAY] " : ""}Day {currentDay} &middot; {currentPhase} Phase
@@ -262,6 +263,9 @@ export default function App() {
                   </div>
                 )}
               </div>
+
+              {/* Right side: Controls */}
+              <div className="flex flex-wrap items-center gap-2">
                 <div className="flex items-center gap-1 rounded bg-slate-800/50 p-1">
                   <button className="rounded px-2 py-1 text-xs text-slate-300 hover:bg-slate-700 hover:text-white" onClick={() => api.pause()}>⏸ Pause</button>
                   <button className="rounded px-2 py-1 text-xs text-slate-300 hover:bg-slate-700 hover:text-white" onClick={() => api.resume()}>▶ Resume</button>
