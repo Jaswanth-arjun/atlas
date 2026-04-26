@@ -7,6 +7,7 @@ import LeaderboardPanel from "./components/LeaderboardPanel";
 import RevenueCashChart from "./components/RevenueCashChart";
 import RewardChart from "./components/RewardChart";
 import StatsGrid from "./components/StatsGrid";
+import TrainingEvidence from "./components/TrainingEvidence";
 import { api } from "./services/api";
 import { connectWS } from "./services/ws";
 import { useStore } from "./store";
@@ -217,11 +218,10 @@ export default function App() {
                 key={item}
                 type="button"
                 onClick={() => goToSection(item)}
-                className={`w-full rounded-xl border px-3 py-2 text-left transition ${
-                  activeNav === item
+                className={`w-full rounded-xl border px-3 py-2 text-left transition ${activeNav === item
                     ? "border-cyan-400/60 bg-cyan-500/10 text-cyan-200"
                     : "border-transparent text-slate-300 hover:border-slate-600 hover:bg-slate-800/30"
-                }`}
+                  }`}
               >
                 {item}
               </button>
@@ -264,7 +264,7 @@ export default function App() {
                   Download CSV
                 </button>
                 {episodeId && (
-                  <a className="top-button-primary" href={api.investorReport(episodeId)} target="_blank">
+                  <a className="top-button-primary" href={api.investorReport(episodeId)} target="_blank" rel="noopener noreferrer">
                     Generate Report
                   </a>
                 )}
@@ -276,9 +276,12 @@ export default function App() {
             <StatsGrid state={state} />
           </section>
 
-          <section id="section-analytics" className="grid gap-4 lg:grid-cols-2">
-            <RevenueCashChart data={history} />
-            <RewardChart data={rewards} />
+          <section id="section-analytics">
+            <TrainingEvidence />
+            <div className="grid gap-4 lg:grid-cols-2">
+              <RevenueCashChart data={history} />
+              <RewardChart data={rewards} />
+            </div>
           </section>
 
           <section id="section-team">
