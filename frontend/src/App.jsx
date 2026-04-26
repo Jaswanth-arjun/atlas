@@ -13,7 +13,7 @@ import { connectWS } from "./services/ws";
 import { useStore } from "./store";
 
 const MAX_POINTS = 120;
-const NAV_ITEMS = ["Dashboard", "Overview", "Analytics", "Decisions", "Market", "Team", "Reports", "Settings", "Training"];
+const NAV_ITEMS = ["Dashboard", "Overview", "Analytics", "Decisions", "Market", "Team", "Reports", "Training", "Settings"];
 
 function getReason(action, state, phase) {
   const reasons = {
@@ -171,8 +171,8 @@ export default function App() {
       { id: "section-market", nav: "Market" },
       { id: "section-team", nav: "Team" },
       { id: "section-reports", nav: "Reports" },
-      { id: "section-settings", nav: "Settings" },
       { id: "section-training", nav: "Training" },
+      { id: "section-settings", nav: "Settings" },
     ];
 
     const observer = new IntersectionObserver(
@@ -303,13 +303,13 @@ export default function App() {
             <LeaderboardPanel rows={leaderboard} onReplay={onReplay} onPdf={api.investorReport} />
           </section>
 
+          <section id="section-training">
+            <TrainingEvidence />
+          </section>
+
           <section id="section-settings" className="glass-card">
             <div className="panel-title mb-1">Settings</div>
             <p className="text-sm text-slate-400">Use the controls in the top bar to change mode, reset, export CSV, and generate report.</p>
-          </section>
-
-          <section id="section-training">
-            <TrainingEvidence />
           </section>
         </main>
       </div>
