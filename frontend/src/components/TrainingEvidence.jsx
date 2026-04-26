@@ -4,7 +4,7 @@ export default function TrainingEvidence() {
   const [activeTab, setActiveTab] = useState("trained");
 
   return (
-    <div className="chart-card p-6 border border-slate-800 bg-slate-900/50 rounded-xl mb-6">
+    <div className="glass-card p-6 border border-slate-800 bg-slate-900/50 rounded-xl mb-6">
       <div className="mb-6">
         <h2 className="text-xl font-bold text-white mb-1">
           RL Training Evidence & Learning Outcome (TRL / Unsloth)
