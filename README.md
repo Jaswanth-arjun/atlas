@@ -28,7 +28,7 @@ pinned: false
 
 ## Demo Video
 
-Youtube Demo: https://youtu.be/1aWDCkJ3Uyc
+Youtube Demo: https://youtu.be/6drWDtNvJNM
 
 ---
 
@@ -70,7 +70,7 @@ The environment is also deployed on **Hugging Face Spaces** right now.
 |---|---|
 | Live Space | https://huggingface.co/spaces/nelluru/ATLAS |
 | Live App | https://nelluru-atlas.hf.space |
-| Demo Video | https://youtu.be/1aWDCkJ3Uyc |
+| Demo Video | https://youtu.be/6drWDtNvJNM |
 | Google Colab Training | [Run Training Pipeline](https://colab.research.google.com/drive/1zGZNoiwAomnLb2gpLURKu7ELrXdJv8qi) |
 
 ---
@@ -672,7 +672,7 @@ This project aligns with the Meta OpenEnv Hackathon evaluation criteria:
 | TRL RL trainer (GRPO) | training/trl_grpo_rl.py |
 | Unsloth acceleration integrated | training/trl_colab_minimal.py, requirements.txt |
 | Training Evidence (plots) | reward_curve.png, trl_combined.png, trl_loss_curve.png, trl_grpo_reward_curve.png |
-| Mini-video < 2 min | https://youtu.be/1aWDCkJ3Uyc |
+| Mini-video < 2 min | https://youtu.be/6drWDtNvJNM |
 | Hosted on Hugging Face Spaces | https://huggingface.co/spaces/nelluru/ATLAS |
 | README with all links + Strategy | This file |
 
@@ -752,7 +752,7 @@ We hope this project inspires innovative AI-driven management simulations. Feel 
 <summary>Quick Links</summary>
 
 - [Live Space](https://huggingface.co/spaces/nelluru/ATLAS)
-- [Demo Video](https://youtu.be/1aWDCkJ3Uyc)
+- [Demo Video](https://youtu.be/6drWDtNvJNM)
 - [GitHub Repo](https://github.com/Jaswanth-arjun/atlas)
 </details>
 
