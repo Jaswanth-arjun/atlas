@@ -679,17 +679,6 @@ This project aligns with the Meta OpenEnv Hackathon evaluation criteria:
 
 ---
 
-## 3-Minute Demo Flow
-
-1. Open dashboard -> pick a scenario preset (Startup / Crisis / Growth)
-2. Show live CEO decisions, market events, department reactions
-3. Highlight reward chart climbing as smart decisions are made
-4. Show leaderboard and replay a previous quarter
-5. Run `python training/train.py` -> show `reward_curve.png` improvement
-6. Run `python training/trl_grpo_rl.py` to show reward-driven GRPO policy improvement
-
----
-
 ## Troubleshooting
 
 - **WebSocket connection fails**: Ensure the backend is running on port 8000 and that no firewall blocks the connection.
