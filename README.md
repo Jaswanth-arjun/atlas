@@ -332,8 +332,6 @@ To provide verifiable proof that the LLM weights were updated via RL, we provide
 
 1. **[Training Behavioral Logs](TRAINING_LOGS.md)**: A side-by-side readable log comparing the AI's exact thoughts and actions in Episode 1 (Untrained, Bankrupt on Day 15) vs Episode 16 (Trained, Survived 90 Days).
    *Note to Judges: Our training script automatically appends episode summaries (rewards, steps survived) to this log file in real-time during training.*
-2. **Trained Model Weights**: The final fine-tuned weights from our TRL pipeline are hosted on Hugging Face Hub.
-   - Weights Link: [nelluru/atlas-ceo-distilgpt2](https://huggingface.co/nelluru/atlas-ceo-distilgpt2)
 
 ### Run It Yourself (Auto-Logging Demo)
 
@@ -577,6 +575,7 @@ graph TD
 
 ## Project Structure
 
+```
 atlas/
 ├── agents/                          # NPC Department Agents
 │   ├── __init__.py                  # Package initialization
@@ -639,6 +638,7 @@ atlas/
 ├── run_frontend.ps1                 # Frontend launcher (Windows)
 ├── TRAINING_LOGS.md                 # Training logs (auto-updated)
 └── README.md                        # Project documentation
+```
 
 ## Technology Stack
 
@@ -665,16 +665,16 @@ This project aligns with the Meta OpenEnv Hackathon evaluation criteria:
 ## Minimum Requirements Checklist
 
 | Requirement | Artifact |
-|---|---|---|
-| OpenEnv (latest release) `0.2.3` | `requirements.txt`, `openenv.yaml` |
-| OpenEnv manifest | `openenv.yaml` (repo root) |
-| TRL SFT training script in Colab | `training/TRL_Colab_Minimal.ipynb`, `training/trl_colab_minimal.py` |
-| TRL RL trainer (GRPO) | `training/trl_grpo_rl.py` |
-| Unsloth acceleration integrated | `training/trl_colab_minimal.py`, `requirements.txt` |
-| Training Evidence (plots)  | `reward_curve.png`, `trl_combined.png`, `trl_loss_curve.png`, `trl_grpo_reward_curve.png` |
+|-------------|----------|
+| OpenEnv (latest release) 0.2.3 | requirements.txt, openenv.yaml |
+| OpenEnv manifest | openenv.yaml (repo root) |
+| TRL SFT training script in Colab | training/TRL_Colab_Minimal.ipynb, training/trl_colab_minimal.py |
+| TRL RL trainer (GRPO) | training/trl_grpo_rl.py |
+| Unsloth acceleration integrated | training/trl_colab_minimal.py, requirements.txt |
+| Training Evidence (plots) | reward_curve.png, trl_combined.png, trl_loss_curve.png, trl_grpo_reward_curve.png |
 | Mini-video < 2 min | https://youtu.be/1aWDCkJ3Uyc |
-| Hosted on Hugging Face Spaces  | https://huggingface.co/spaces/nelluru/ATLAS |
-| README with all links + Strategy  | This file |
+| Hosted on Hugging Face Spaces | https://huggingface.co/spaces/nelluru/ATLAS |
+| README with all links + Strategy | This file |
 
 ---
 
