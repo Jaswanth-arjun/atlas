@@ -72,6 +72,7 @@ The environment is also deployed on **Hugging Face Spaces** right now.
 | Live App | https://nelluru-atlas.hf.space |
 | Demo Video | https://youtu.be/6drWDtNvJNM |
 | Google Colab Training | [Run Training Pipeline](https://colab.research.google.com/drive/1zGZNoiwAomnLb2gpLURKu7ELrXdJv8qi) |
+| Presentation | https://docs.google.com/presentation/d/1ijZkJZTXke_qHiKfI9zOVI9Z6Wdx9p04/edit?usp=sharing&ouid=114255110168767644589&rtpof=true&sd=true |
 
 ---
 
@@ -674,7 +675,7 @@ This project aligns with the Meta OpenEnv Hackathon evaluation criteria:
 | Training Evidence (plots) | reward_curve.png, trl_combined.png, trl_loss_curve.png, trl_grpo_reward_curve.png |
 | Mini-video < 2 min | https://youtu.be/6drWDtNvJNM |
 | Hosted on Hugging Face Spaces | https://huggingface.co/spaces/nelluru/ATLAS |
-| README with all links + Strategy | This file |
+| Presentation | https://docs.google.com/presentation/d/1ijZkJZTXke_qHiKfI9zOVI9Z6Wdx9p04/edit?usp=sharing&ouid=114255110168767644589&rtpof=true&sd=true |
 
 ---
 
@@ -754,6 +755,7 @@ We hope this project inspires innovative AI-driven management simulations. Feel 
 - [Live Space](https://huggingface.co/spaces/nelluru/ATLAS)
 - [Demo Video](https://youtu.be/6drWDtNvJNM)
 - [GitHub Repo](https://github.com/Jaswanth-arjun/atlas)
+-[Presentation](https://docs.google.com/presentation/d/1ijZkJZTXke_qHiKfI9zOVI9Z6Wdx9p04/edit?usp=sharing&ouid=114255110168767644589&rtpof=true&sd=true)
 </details>
 
 ---
