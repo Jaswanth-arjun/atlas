@@ -46,7 +46,7 @@ rubric:
     weight: 0.20
   - name: morale_reward
     description: Positive reward for high employee morale (0.02 × employee_morale)
-    weight: 0.20
+    weight: 0.15
   - name: customer_reward
     description: Positive reward for customer satisfaction (0.02 × customer_satisfaction)
     weight: 0.20
