@@ -28,7 +28,7 @@ pinned: false
 
 ## Demo Video
 
-ðŸŽ¬ https://youtu.be/1aWDCkJ3Uyc
+Youtube Demo: https://youtu.be/1aWDCkJ3Uyc
 
 ---
 
@@ -71,7 +71,6 @@ The environment is also deployed on **Hugging Face Spaces** right now.
 | Live Space | https://huggingface.co/spaces/nelluru/ATLAS |
 | Live App | https://nelluru-atlas.hf.space |
 | Demo Video | https://youtu.be/1aWDCkJ3Uyc |
-| Model Weights | https://huggingface.co/nelluru/atlas-ceo-distilgpt2 |
 | Google Colab Training | [Run Training Pipeline](https://colab.research.google.com/drive/1zGZNoiwAomnLb2gpLURKu7ELrXdJv8qi) |
 
 ---
@@ -563,91 +562,83 @@ curl -X POST "http://localhost:8000/speed?val=2.0"
 
 ## Architecture Overview
 
-```
-+-------------------+       WebSocket / REST        +---------------------+
-|                   | <---------------------------> |                     |
-|  React Dashboard  |                               |  FastAPI Backend    |
-|  (Vite + Zustand) |                               |  (Uvicorn)          |
-|                   |                               |                     |
-+-------------------+                               +----------+----------+
-                                                               |
-                                          +--------------------+--------------------+
-                                          |                    |                    |
-                                   +------v------+    +-------v-------+    +-------v-------+
-                                   |   Atlas     |    |  AI CEO /     |    |   SQLite      |
-                                   |   Startup   |    |  LLM Service  |    |   Episode     |
-                                   |   Env       |    |  (Gemini,     |    |   Logs        |
-                                   |  (Gym +     |    |   OpenAI,     |    |               |
-                                   |   OpenEnv)  |    |   Anthropic)  |    +---------------+
-                                   +------+------+    +---------------+
-                                          |
-                              +-----------+-----------+
-                              |           |           |
-                        +-----v---+ +----v----+ +----v-----+
-                        | Events  | | Presets | | NPC      |
-                        | Engine  | | Config  | | Agents   |
-                        +---------+ +---------+ +----------+
+```mermaid
+graph TD
+    A["Frontend: React Dashboard"] <-->|"WebSocket & REST API"| B("Backend: FastAPI Server")
+    B --> C{"AtlasStartupEnv"}
+    C --> D["Environment State"]
+    C --> E["Reward Engine"]
+    C --> F["Event Generator"]
+    B --> G[("SQLite Logs")]
+    B --> H["AI CEO / LLM Integration"]
+    I["OpenEnv Validator"] --> B
+    J["TRL GRPO Trainer"] <--> C
 ```
 
 ## Project Structure
 
-```
 atlas/
-â”œâ”€â”€ agents/                          # NPC Department Agents
-â”‚   â”œâ”€â”€ __init__.py                  # Package init
-â”‚   â”œâ”€â”€ employee.py                  # Agent logic (react, memory, performance)
-â”‚   â””â”€â”€ personalities.py            # Personality templates per role
-â”œâ”€â”€ backend/                         # FastAPI Application
-â”‚   â”œâ”€â”€ main.py                      # App entrypoint, WebSocket, lifespan
-â”‚   â”œâ”€â”€ api.py                       # REST API routes (/reset, /step, /state, etc.)
-â”‚   â”œâ”€â”€ db.py                        # SQLite models (EpisodeLog, StepLog)
-â”‚   â”œâ”€â”€ openenv_models.py           # Pydantic schemas (AtlasAction, AtlasObservation)
-â”‚   â”œâ”€â”€ schemas.py                   # Request/response schemas
-â”‚   â”œâ”€â”€ ws_manager.py               # WebSocket connection manager
-â”‚   â””â”€â”€ services/                    # Core backend services
-â”‚       â”œâ”€â”€ simulator.py            # SimulationService orchestrator
-â”‚       â””â”€â”€ report.py               # PDF investor report generator
-â”œâ”€â”€ data/                            # Generated reports and exports
-â”œâ”€â”€ docker/                          # Additional Docker configurations
-â”‚   â”œâ”€â”€ Dockerfile.backend          # Backend-only Dockerfile
-â”‚   â””â”€â”€ docker-compose.yml          # Multi-service compose
-â”œâ”€â”€ env/                             # Core RL Environment
-â”‚   â”œâ”€â”€ startup_env.py              # AtlasStartupEnv (Gym) + AtlasOpenEnv adapter
-â”‚   â”œâ”€â”€ events.py                    # 10 stochastic event definitions
-â”‚   â””â”€â”€ presets.py                   # Scenario presets (startup, crisis, growth)
-â”œâ”€â”€ frontend/                        # React UI Dashboard
-â”‚   â”œâ”€â”€ src/
-â”‚   â”‚   â”œâ”€â”€ App.jsx                 # Main dashboard component
-â”‚   â”‚   â”œâ”€â”€ main.jsx                # React entry point
-â”‚   â”‚   â”œâ”€â”€ store.js                # Zustand global state
-â”‚   â”‚   â”œâ”€â”€ styles.css              # Global styles
-â”‚   â”‚   â”œâ”€â”€ components/             # UI components
-â”‚   â”‚   â””â”€â”€ services/               # API client services
-â”‚   â”œâ”€â”€ package.json                # Node dependencies
-â”‚   â””â”€â”€ vite.config.js              # Vite build configuration
-â”œâ”€â”€ training/                        # RL and Fine-Tuning Scripts
-â”‚   â”œâ”€â”€ trl_grpo_rl.py              # TRL GRPO RL training loop
-â”‚   â”œâ”€â”€ trl_colab_minimal.py        # TRL SFT fine-tuning script
-â”‚   â”œâ”€â”€ TRL_Colab_Minimal.ipynb     # Colab notebook
-â”‚   â”œâ”€â”€ train.py                     # Random vs heuristic baseline
-â”‚   â”œâ”€â”€ check_openenv.py            # OpenEnv manifest validation
-â”‚   â”œâ”€â”€ validate_project_conditions.py  # 3-condition compliance tester
-â”‚   â”œâ”€â”€ gen_training_evidence.py    # Evidence plot generator
-â”‚   â”œâ”€â”€ gen_trl_plot.py             # TRL plot generator
-â”‚   â”œâ”€â”€ test_llm.py                 # LLM integration tests
-â”‚   â”œâ”€â”€ reward_curve.png            # Baseline reward plot
-â”‚   â”œâ”€â”€ trl_combined.png            # Combined SFT evidence
-â”‚   â”œâ”€â”€ trl_reward_curve.png        # SFT before/after plot
-â”‚   â”œâ”€â”€ trl_loss_curve.png          # SFT loss convergence plot
-â”‚   â””â”€â”€ trl_grpo_reward_curve.png   # GRPO reward curve plot
-â”œâ”€â”€ Dockerfile                       # Multi-stage production build
-â”œâ”€â”€ openenv.yaml                     # OpenEnv manifest (spec_version 1)
-â”œâ”€â”€ requirements.txt                 # Python dependencies
-â”œâ”€â”€ run_backend.ps1                  # Backend launcher (Windows)
-â”œâ”€â”€ run_frontend.ps1                 # Frontend launcher (Windows)
-â”œâ”€â”€ TRAINING_LOGS.md                 # Auto-updated training behavioral logs
-â””â”€â”€ README.md                        # This file
-```
+├── agents/                          # NPC Department Agents
+│   ├── __init__.py                  # Package initialization
+│   ├── employee.py                  # Agent logic (react, memory, performance)
+│   └── personalities.py             # Personality templates per role
+│
+├── backend/                         # FastAPI Application
+│   ├── main.py                      # App entrypoint, WebSocket, lifecycle
+│   ├── api.py                       # REST API routes (/reset, /step, /state, etc.)
+│   ├── db.py                        # SQLite models (EpisodeLog, StepLog)
+│   ├── openenv_models.py            # Pydantic schemas (AtlasAction, AtlasObservation)
+│   ├── schemas.py                   # Request/response schemas
+│   ├── ws_manager.py                # WebSocket connection manager
+│   └── services/                    # Core backend services
+│       ├── simulator.py             # Simulation service orchestrator
+│       └── report.py                # PDF investor report generator
+│
+├── data/                            # Generated reports and exports
+│
+├── docker/                          # Additional Docker configurations
+│   ├── Dockerfile.backend           # Backend-only Dockerfile
+│   └── docker-compose.yml           # Multi-service configuration
+│
+├── env/                             # Core Reinforcement Learning Environment
+│   ├── startup_env.py               # AtlasStartupEnv + OpenEnv adapter
+│   ├── events.py                    # Stochastic event definitions
+│   └── presets.py                   # Scenario presets (startup, crisis, growth)
+│
+├── frontend/                        # React UI Dashboard
+│   ├── src/
+│   │   ├── App.jsx                  # Main dashboard component
+│   │   ├── main.jsx                 # React entry point
+│   │   ├── store.js                 # Zustand global state
+│   │   ├── styles.css               # Global styles
+│   │   ├── components/              # UI components
+│   │   └── services/                # API client services
+│   ├── package.json                 # Node dependencies
+│   └── vite.config.js               # Vite build configuration
+│
+├── training/                        # RL and Fine-Tuning Scripts
+│   ├── trl_grpo_rl.py               # GRPO reinforcement learning loop
+│   ├── trl_colab_minimal.py         # Supervised fine-tuning script
+│   ├── TRL_Colab_Minimal.ipynb      # Colab notebook
+│   ├── train.py                     # Random vs heuristic baseline
+│   ├── check_openenv.py             # OpenEnv validation
+│   ├── validate_project_conditions.py  # Compliance checker
+│   ├── gen_training_evidence.py     # Evidence plot generator
+│   ├── gen_trl_plot.py              # TRL plot generator
+│   ├── test_llm.py                  # LLM integration tests
+│   ├── reward_curve.png             # Baseline reward plot
+│   ├── trl_combined.png             # Combined SFT evidence
+│   ├── trl_reward_curve.png         # SFT before/after plot
+│   ├── trl_loss_curve.png           # SFT loss curve
+│   └── trl_grpo_reward_curve.png    # GRPO reward curve
+│
+├── Dockerfile                       # Production build
+├── openenv.yaml                     # OpenEnv manifest
+├── requirements.txt                 # Python dependencies
+├── run_backend.ps1                  # Backend launcher (Windows)
+├── run_frontend.ps1                 # Frontend launcher (Windows)
+├── TRAINING_LOGS.md                 # Training logs (auto-updated)
+└── README.md                        # Project documentation
 
 ## Technology Stack
 
@@ -673,17 +664,17 @@ This project aligns with the Meta OpenEnv Hackathon evaluation criteria:
 
 ## Minimum Requirements Checklist
 
-| Requirement | Status | Artifact |
+| Requirement | Artifact |
 |---|---|---|
-| OpenEnv (latest release) `0.2.3` | âœ… | `requirements.txt`, `openenv.yaml` |
-| OpenEnv manifest | âœ… | `openenv.yaml` (repo root) |
-| TRL SFT training script in Colab | âœ… | `training/TRL_Colab_Minimal.ipynb`, `training/trl_colab_minimal.py` |
-| TRL RL trainer (GRPO) | âœ… | `training/trl_grpo_rl.py` |
-| Unsloth acceleration integrated | âœ… | `training/trl_colab_minimal.py`, `requirements.txt` |
-| Training Evidence (plots) | âœ… | `reward_curve.png`, `trl_combined.png`, `trl_loss_curve.png`, `trl_grpo_reward_curve.png` |
-| Mini-video < 2 min | âœ… | https://youtu.be/1aWDCkJ3Uyc |
-| Hosted on Hugging Face Spaces | âœ… | https://huggingface.co/spaces/nelluru/ATLAS |
-| README with all links + Strategy | âœ… | This file |
+| OpenEnv (latest release) `0.2.3` | `requirements.txt`, `openenv.yaml` |
+| OpenEnv manifest | `openenv.yaml` (repo root) |
+| TRL SFT training script in Colab | `training/TRL_Colab_Minimal.ipynb`, `training/trl_colab_minimal.py` |
+| TRL RL trainer (GRPO) | `training/trl_grpo_rl.py` |
+| Unsloth acceleration integrated | `training/trl_colab_minimal.py`, `requirements.txt` |
+| Training Evidence (plots)  | `reward_curve.png`, `trl_combined.png`, `trl_loss_curve.png`, `trl_grpo_reward_curve.png` |
+| Mini-video < 2 min | https://youtu.be/1aWDCkJ3Uyc |
+| Hosted on Hugging Face Spaces  | https://huggingface.co/spaces/nelluru/ATLAS |
+| README with all links + Strategy  | This file |
 
 ---
 
@@ -768,3 +759,4 @@ We hope this project inspires innovative AI-driven management simulations. Feel 
 ---
 
 (c) 2026 Jaswanth Arjun. All rights reserved. Licensed under Apache 2.0.
+
