@@ -124,6 +124,15 @@ export default function App() {
     // Update mandate badge from fresh reset
     if (resetRes.data.state?.mandate) setMandate(resetRes.data.state.mandate);
     await loadLeaderboard();
+    
+    // Auto-scroll to top (Dashboard) after applying reset/mandate
+    const topNode = document.getElementById("section-dashboard");
+    if (topNode) {
+      topNode.scrollIntoView({ behavior: "smooth", block: "start" });
+      setActiveNav("Dashboard");
+    } else {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
   }
 
   async function onReplay(id) {
@@ -257,7 +266,7 @@ export default function App() {
                   {isReplayModeRef.current ? "[REPLAY] " : ""}Day {currentDay} &middot; {currentPhase} Phase
                 </div>
                 {mandate && (
-                  <div className="rounded-xl border border-amber-400/40 bg-amber-500/10 px-4 py-2 text-sm font-medium text-amber-200"
+                  <div className="rounded-xl border border-cyan-400/40 bg-cyan-500/10 px-4 py-2 text-sm font-medium text-cyan-200"
                        title={mandate}>
                     📋 Mandate: {mandate.split(":")[0]}
                   </div>
@@ -337,7 +346,7 @@ export default function App() {
             <div className="space-y-6">
               {/* Board Mandate Selector */}
               <div className="rounded-xl border border-slate-700/50 bg-slate-800/20 p-5">
-                <label className="mb-2 flex items-center gap-2 text-sm font-semibold text-amber-300">
+                <label className="mb-2 flex items-center gap-2 text-sm font-semibold text-cyan-300">
                   <span className="text-lg">📋</span> Board Mandate Override
                 </label>
                 <p className="mb-4 text-xs text-slate-400">
@@ -351,8 +360,8 @@ export default function App() {
                       onClick={() => setSelectedMandate(opt.value)}
                       className={`flex flex-col justify-start rounded-xl border px-4 py-3 text-left transition ${
                         selectedMandate === opt.value
-                          ? "border-amber-400/70 bg-amber-500/20 text-amber-100 shadow-[0_0_15px_rgba(251,191,36,0.15)]"
-                          : "border-slate-700/50 bg-slate-800/40 text-slate-300 hover:border-amber-400/30 hover:bg-slate-800/80"
+                          ? "border-cyan-400/70 bg-cyan-500/20 text-cyan-100 shadow-[0_0_15px_rgba(34,211,238,0.15)]"
+                          : "border-slate-700/50 bg-slate-800/40 text-slate-300 hover:border-cyan-400/30 hover:bg-slate-800/80"
                       }`}
                     >
                       <div className="font-medium text-sm mb-1">{opt.label}</div>
@@ -366,7 +375,7 @@ export default function App() {
                   <button
                     type="button"
                     onClick={onReset}
-                    className="rounded-lg border border-amber-400/60 bg-amber-500/20 px-5 py-2 text-sm font-semibold text-amber-200 transition hover:bg-amber-500/30 hover:text-amber-100"
+                    className="rounded-lg border border-cyan-400/60 bg-cyan-500/20 px-5 py-2 text-sm font-semibold text-cyan-200 transition hover:bg-cyan-500/30 hover:text-cyan-100"
                   >
                     Apply Mandate &amp; Reset Simulation
                   </button>
@@ -375,13 +384,13 @@ export default function App() {
 
               {/* Current Active Mandate */}
               {mandate && (
-                <div className="flex items-start gap-3 rounded-xl border border-amber-400/30 bg-amber-500/10 p-4">
+                <div className="flex items-start gap-3 rounded-xl border border-cyan-400/30 bg-cyan-500/10 p-4">
                   <div className="text-2xl">🎯</div>
                   <div>
-                    <div className="text-xs font-semibold uppercase tracking-wider text-amber-400/80 mb-1">Active Board Mandate</div>
-                    <div className="text-sm font-medium text-amber-100">{mandate.split(":")[0]}</div>
+                    <div className="text-xs font-semibold uppercase tracking-wider text-cyan-400/80 mb-1">Active Board Mandate</div>
+                    <div className="text-sm font-medium text-cyan-100">{mandate.split(":")[0]}</div>
                     {mandate.includes(":") && (
-                      <div className="mt-1 text-xs text-amber-200/70">{mandate.split(":")[1]?.trim()}</div>
+                      <div className="mt-1 text-xs text-cyan-200/70">{mandate.split(":")[1]?.trim()}</div>
                     )}
                   </div>
                 </div>
